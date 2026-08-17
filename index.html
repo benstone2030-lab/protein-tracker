@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Protein</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#CFD2CE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Protein">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" href="./icon-180.png">
+<style>
+  :root{
+    --bg:#CFD2CE; --panel:#E4E6E1; --edge:#B4B8B2;
+    --ink:#1C201F; --muted:#6C726E;
+    --fill:#2F5D4C; --dim:#A9B3AD; --over:#8A5A1B; --red:#8C3A32;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+  body{
+    min-height:100vh;
+    padding:max(20px,env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom));
+    -webkit-user-select:none;user-select:none;
+  }
+  input{-webkit-user-select:text;user-select:text}
+  .wrap{max-width:520px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--muted)}
+  header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+
+  .panel{background:var(--panel);border:1px solid var(--edge);padding:22px 18px 18px}
+  .readout{display:flex;align-items:baseline;gap:8px}
+  #total{
+    font-family:var(--mono);font-size:64px;line-height:.9;font-weight:600;
+    letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+  }
+  #total.over{color:var(--over)}
+  .goalline{font-family:var(--mono);font-size:16px;color:var(--muted)}
+  #goalBtn{
+    font-family:var(--mono);font-size:16px;color:var(--muted);background:none;
+    border:none;border-bottom:1px dashed var(--edge);padding:0;cursor:pointer;
+  }
+  #goalInput{
+    width:58px;font-family:var(--mono);font-size:16px;border:none;
+    border-bottom:1px solid var(--fill);background:transparent;color:var(--ink);padding:0;
+  }
+
+  .bar{display:flex;gap:2px;height:26px;margin-top:18px}
+  .bar i{flex:1;background:var(--dim);opacity:.5;transition:background .18s linear,opacity .18s linear}
+  .bar i.on{background:var(--fill);opacity:1}
+  .bar.over i.on{background:var(--over)}
+  .barmeta{display:flex;justify-content:space-between;margin-top:8px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted)}
+
+  .entry{display:flex;gap:8px;margin-top:12px}
+  #amount{
+    flex:1;font-family:var(--mono);font-size:26px;padding:14px;
+    background:var(--panel);border:1px solid var(--edge);color:var(--ink);border-radius:0;
+  }
+  #add{
+    width:74px;font-family:var(--mono);font-size:13px;letter-spacing:.12em;
+    background:var(--fill);color:#F2F4F1;border:none;cursor:pointer;
+  }
+  #add:active{background:#26493C}
+  .msg{margin-top:8px;font-family:var(--mono);font-size:12px;color:var(--red)}
+
+  h2{margin:26px 0 8px;font-family:var(--mono);font-size:11px;
+     letter-spacing:.18em;color:var(--muted);font-weight:400}
+  .row{display:flex;align-items:center;justify-content:space-between;
+       padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--edge);margin-bottom:2px}
+  .row .g{font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums}
+  .row .right{display:flex;align-items:center;gap:14px}
+  .row .t{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .row button{background:none;border:none;color:var(--muted);font-size:20px;
+              line-height:1;cursor:pointer;padding:2px 6px}
+  .empty{font-size:14px;color:var(--muted);padding:10px 0}
+
+  .week{display:flex;align-items:flex-end;gap:6px;height:92px;margin-top:10px;
+        border-bottom:1px solid var(--edge);position:relative}
+  .week .goalmark{position:absolute;left:0;right:0;border-top:1px dashed var(--muted);opacity:.7}
+  .week .col{flex:1;display:flex;align-items:flex-end;height:100%}
+  .week .col span{width:100%;background:var(--dim)}
+  .week .col span.hit{background:var(--fill)}
+  .weeknums{display:flex;gap:6px;margin-top:6px}
+  .weeknums div{flex:1;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+  footer{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap}
+  footer button{
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);
+    background:none;border:1px solid var(--edge);padding:8px 12px;cursor:pointer;
+  }
+  #tip{margin-top:22px;padding:12px;border:1px dashed var(--edge);
+       font-size:13px;color:var(--muted);line-height:1.5;display:none}
+  #tip button{float:right;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer}
+  :focus-visible{outline:2px solid var(--fill);outline-offset:2px}
+  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">PROTEIN</span>
+    <span class="eyebrow" id="date"></span>
+  </header>
+
+  <div class="panel">
+    <div class="readout">
+      <span id="total">0</span>
+      <span class="goalline">/ <button id="goalBtn">180</button> g</span>
+    </div>
+    <div class="bar" id="bar"></div>
+    <div class="barmeta"><span id="pct">0%</span><span id="rem"></span></div>
+  </div>
+
+  <div class="entry">
+    <input id="amount" inputmode="decimal" placeholder="grams" aria-label="Grams of protein" autocomplete="off">
+    <button id="add">ADD</button>
+  </div>
+  <div class="msg" id="msg" hidden></div>
+
+  <h2>TODAY</h2>
+  <div id="list"></div>
+
+  <h2>LAST 7 DAYS</h2>
+  <div class="week" id="week"><div class="goalmark" id="goalmark"></div></div>
+  <div class="weeknums" id="weeknums"></div>
+
+  <footer>
+    <button id="export">EXPORT DATA</button>
+    <button id="import">IMPORT DATA</button>
+  </footer>
+
+  <div id="tip">
+    <button id="tipclose" aria-label="Dismiss">&times;</button>
+    Add this to your home screen: tap Share, then <strong>Add to Home Screen</strong>. It runs full screen and works without a connection.
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="protein-log-v1", SEG=32;
+  var mem=null; // fallback if storage is blocked
+
+  function load(){
+    try{ var raw=localStorage.getItem(KEY); return raw?JSON.parse(raw):{goal:180,days:{}}; }
+    catch(e){ return mem||{goal:180,days:{}}; }
+  }
+  function save(){
+    try{ localStorage.setItem(KEY,JSON.stringify(state)); }
+    catch(e){ mem=state; note("Storage is blocked here. Entries stay until you close the tab."); }
+  }
+
+  var state=load();
+  if(typeof state.goal!=="number") state.goal=180;
+  if(!state.days) state.days={};
+
+  function key(d){ d=d||new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  var today=key();
+
+  var el=function(id){return document.getElementById(id);};
+  var bar=el("bar");
+  for(var i=0;i<SEG;i++) bar.appendChild(document.createElement("i"));
+
+  function note(m){ var n=el("msg"); if(!m){n.hidden=true;return;} n.textContent=m; n.hidden=false; }
+
+  function entries(){ return state.days[today]||[]; }
+  function sum(list){ return list.reduce(function(s,e){return s+e.g;},0); }
+
+  function render(){
+    el("date").textContent=new Date().toLocaleDateString(undefined,
+      {weekday:"short",month:"short",day:"numeric"}).toUpperCase();
+
+    var list=entries(), total=sum(list), goal=state.goal;
+    var pct=goal>0?total/goal:0;
+    el("total").textContent=Math.round(total);
+    el("total").classList.toggle("over",total>goal);
+    el("goalBtn").textContent=goal;
+    el("pct").textContent=Math.round(pct*100)+"%";
+    el("rem").textContent = total>goal
+      ? Math.round(total-goal)+" G OVER"
+      : Math.round(Math.max(0,goal-total))+" G TO GO";
+
+    var filled=Math.min(SEG,Math.round(pct*SEG));
+    bar.classList.toggle("over",total>goal);
+    for(var i=0;i<SEG;i++) bar.children[i].classList.toggle("on",i<filled);
+
+    var box=el("list"); box.innerHTML="";
+    if(!list.length){
+      var e=document.createElement("div");
+      e.className="empty"; e.textContent="Nothing logged yet. Type a number above.";
+      box.appendChild(e);
+    } else {
+      list.slice().reverse().forEach(function(item){
+        var row=document.createElement("div"); row.className="row";
+        var g=document.createElement("span"); g.className="g"; g.textContent=item.g+" g";
+        var right=document.createElement("span"); right.className="right";
+        var t=document.createElement("span"); t.className="t";
+        t.textContent=new Date(item.t).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+        var x=document.createElement("button");
+        x.innerHTML="&times;"; x.setAttribute("aria-label","Remove "+item.g+" gram entry");
+        x.onclick=function(){
+          state.days[today]=entries().filter(function(e){return e.id!==item.id;});
+          save(); render();
+        };
+        right.appendChild(t); right.appendChild(x);
+        row.appendChild(g); row.appendChild(right); box.appendChild(row);
+      });
+    }
+    renderWeek(goal);
+  }
+
+  function renderWeek(goal){
+    var w=el("week"), nums=el("weeknums");
+    Array.prototype.slice.call(w.querySelectorAll(".col")).forEach(function(c){c.remove();});
+    nums.innerHTML="";
+    var now=new Date(), totals=[];
+    for(var i=6;i>=0;i--){
+      var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);
+      totals.push(sum(state.days[key(d)]||[]));
+    }
+    var max=Math.max.apply(null,totals.concat([goal,1]));
+    el("goalmark").style.bottom=(goal/max*80)+"px";
+    totals.forEach(function(t){
+      var col=document.createElement("div"); col.className="col";
+      var s=document.createElement("span");
+      s.style.height=Math.max(2,t/max*80)+"px";
+      if(t>=goal&&t>0) s.className="hit";
+      s.title=Math.round(t)+" g";
+      col.appendChild(s); w.appendChild(col);
+      var n=document.createElement("div"); n.textContent=Math.round(t)||"–"; nums.appendChild(n);
+    });
+  }
+
+  function add(){
+    var input=el("amount"), n=parseFloat(String(input.value).replace(",","."));
+    if(!input.value.trim()) return;
+    if(!isFinite(n)||n<=0){ note("Enter a number greater than zero."); return; }
+    if(n>500){ note("That's over 500 g. Check the number and try again."); return; }
+    today=key();
+    if(!state.days[today]) state.days[today]=[];
+    state.days[today].push({id:Date.now(),g:Math.round(n*10)/10,t:Date.now()});
+    input.value=""; note(""); save(); render(); input.focus();
+  }
+
+  el("add").onclick=add;
+  el("amount").addEventListener("keydown",function(e){ if(e.key==="Enter"){e.preventDefault();add();} });
+  el("amount").addEventListener("input",function(){
+    this.value=this.value.replace(/[^0-9.,]/g,""); note("");
+  });
+
+  var goalBtn=el("goalBtn");
+  goalBtn.addEventListener("click",function(){
+    var input=document.createElement("input");
+    input.id="goalInput"; input.inputMode="numeric";
+    input.value=state.goal; input.setAttribute("aria-label","Daily goal in grams");
+    goalBtn.replaceWith(input);
+    input.focus(); input.select();
+    var closed=false;
+    function done(){
+      if(closed) return; closed=true;
+      var n=parseInt(input.value,10);
+      if(isFinite(n)&&n>0&&n<=1000){ state.goal=n; save(); }
+      input.replaceWith(goalBtn);
+      render();
+    }
+    input.addEventListener("blur",done);
+    input.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); input.blur(); } });
+  });
+
+  // keep the day current across midnight and app resume
+  function checkDay(){
+    var k=key();
+    if(k!==today){ today=k; render(); }
+  }
+  setInterval(checkDay,30000);
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden){ checkDay(); render(); } });
+
+  // backup
+  el("export").onclick=function(){
+    var blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="protein-backup-"+today+".json";
+    a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  };
+  el("import").onclick=function(){
+    var f=document.createElement("input"); f.type="file"; f.accept="application/json,.json";
+    f.onchange=function(){
+      var file=f.files&&f.files[0]; if(!file) return;
+      var r=new FileReader();
+      r.onload=function(){
+        try{
+          var data=JSON.parse(r.result);
+          if(!data||typeof data!=="object"||!data.days) throw 0;
+          state.goal=Number(data.goal)||state.goal;
+          Object.keys(data.days).forEach(function(k){
+            var incoming=data.days[k]||[], existing=state.days[k]||[];
+            var seen={}; existing.forEach(function(e){seen[e.id]=1;});
+            state.days[k]=existing.concat(incoming.filter(function(e){return !seen[e.id];}));
+          });
+          save(); render(); note("");
+        }catch(e){ note("That file isn't a protein backup."); }
+      };
+      r.readAsText(file);
+    };
+    f.click();
+  };
+
+  // home screen hint, iOS Safari only, once
+  try{
+    var standalone=window.navigator.standalone||window.matchMedia("(display-mode: standalone)").matches;
+    var iOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+    if(iOS&&!standalone&&!localStorage.getItem(KEY+":tip")){
+      el("tip").style.display="block";
+      el("tipclose").onclick=function(){
+        el("tip").style.display="none";
+        try{localStorage.setItem(KEY+":tip","1");}catch(e){}
+      };
+    }
+  }catch(e){}
+
+  render();
+  el("amount").focus();
+
+  if("serviceWorker" in navigator){
+    window.addEventListener("load",function(){
+      navigator.serviceWorker.register("./sw.js").catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>
